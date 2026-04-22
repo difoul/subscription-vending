@@ -4,7 +4,7 @@
 # ---------------------------------------------------------------------------
 
 variable "billing_scope" {
-  description = "EA enrollment account billing scope shared by all sandbox subscriptions. Format: /providers/Microsoft.Billing/billingAccounts/<id>/enrollmentAccounts/<id>"
+  description = "Billing scope for subscription creation. EA: /providers/Microsoft.Billing/billingAccounts/<id>/enrollmentAccounts/<id> | MCA: /providers/Microsoft.Billing/billingAccounts/<id>/billingProfiles/<id>/invoiceSections/<id>"
   type        = string
 }
 

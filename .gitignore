@@ -1,0 +1,14 @@
+# Terraform — local state and credentials
+terraform/.terraform/
+terraform/.terraform.lock.hcl
+terraform/terraform.tfstate
+terraform/terraform.tfstate.backup
+terraform/*.tfstate
+terraform/*.tfstate.*
+
+# Environment-specific tfvars (contain billing scopes, emails, subscription IDs)
+terraform/shared.auto.tfvars
+terraform/subscriptions.auto.tfvars
+
+# Local env file
+setenv.sh

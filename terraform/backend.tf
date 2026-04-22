@@ -5,6 +5,6 @@
 #
 # The backend block cannot use interpolated values, so the address is
 # completed via -backend-config flags in the pipeline's terraform init call.
-terraform {
-  backend "http" {}
-}
+# terraform {
+#   backend "http" {}
+# }

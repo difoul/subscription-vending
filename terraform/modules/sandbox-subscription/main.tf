@@ -1,5 +1,5 @@
 # ---------------------------------------------------------------------------
-# 1. Subscription alias (EA programmatic creation via azapi)
+# 1. Subscription alias (EA/MCA programmatic creation via azapi)
 #
 # azapi targets the tenant root (parent_id = "/") and calls the ARM API
 # directly — no provider alias, no subscription context required.
@@ -20,10 +20,15 @@ resource "azapi_resource" "subscription" {
       displayName  = var.subscription_display_name
       workload     = var.workload_type
       billingScope = var.billing_scope
+      additionalProperties = {
+        managementGroupId = "/providers/Microsoft.Management/managementGroups/${var.management_group_id}"
+      }
     }
   }
 
-  response_export_values = ["properties.subscriptionId"]
+  response_export_values = {
+    subscription_id = "properties.subscriptionId"
+  }
 
   lifecycle {
     ignore_changes = [body, name]
@@ -31,36 +36,13 @@ resource "azapi_resource" "subscription" {
 }
 
 # ---------------------------------------------------------------------------
-# 2. Propagation delay
-#
-# Subscription creation is eventually consistent. A short sleep ensures the
-# new subscription ID is resolvable by ARM before dependent operations run.
-# ---------------------------------------------------------------------------
-resource "time_sleep" "wait_for_subscription" {
-  create_duration = "30s"
-  depends_on      = [azapi_resource.subscription]
-}
-
-# ---------------------------------------------------------------------------
-# 3. Management Group placement
-#
-# azapi_resource_action issues a PUT to the MG/subscriptions child resource,
-# which is the canonical way to associate a subscription with a MG. This does
-# not require a subscription-scoped provider alias.
-# ---------------------------------------------------------------------------
-resource "azapi_resource_action" "mg_association" {
-  method      = "PUT"
-  resource_id = "/providers/Microsoft.Management/managementGroups/${var.management_group_id}/subscriptions/${local.subscription_id}"
-  type        = "Microsoft.Management/managementGroups/subscriptions@2021-04-01"
-
-  depends_on = [time_sleep.wait_for_subscription]
-}
-
-# ---------------------------------------------------------------------------
-# 4. Governance resource group (protected — users cannot delete it)
+# 2. Governance resource group (protected — users cannot delete it)
 #
 # Deployed directly into the new subscription via azapi parent_id.
 # No provider alias needed.
+#
+# retry handles eventual consistency — the new subscription ID may not be
+# resolvable by ARM immediately after creation.
 # ---------------------------------------------------------------------------
 resource "azapi_resource" "governance_rg" {
   name      = "rg-sandbox-governance"
@@ -72,11 +54,17 @@ resource "azapi_resource" "governance_rg" {
     tags = local.lifecycle_tags
   }
 
-  depends_on = [time_sleep.wait_for_subscription]
+  retry = {
+    error_message_regex  = ["SubscriptionNotFound", "LinkedAuthorizationFailed"]
+    interval_seconds     = 10
+    max_interval_seconds = 60
+  }
+
+  depends_on = [azapi_resource.subscription]
 }
 
 # ---------------------------------------------------------------------------
-# 5. Subscription-level tags
+# 3. Subscription-level tags
 #
 # azapi_update_resource merges tags onto the subscription resource without
 # replacing other properties (PATCH semantics).
@@ -89,5 +77,11 @@ resource "azapi_update_resource" "subscription_tags" {
     tags = local.lifecycle_tags
   }
 
-  depends_on = [time_sleep.wait_for_subscription]
+  retry = {
+    error_message_regex  = ["SubscriptionNotFound"]
+    interval_seconds     = 10
+    max_interval_seconds = 60
+  }
+
+  depends_on = [azapi_resource.subscription]
 }

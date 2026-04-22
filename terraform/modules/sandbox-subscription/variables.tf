@@ -9,7 +9,7 @@ variable "subscription_display_name" {
 }
 
 variable "billing_scope" {
-  description = "EA enrollment account billing scope. Format: /providers/Microsoft.Billing/billingAccounts/<id>/enrollmentAccounts/<id>"
+  description = "Billing scope for subscription creation. EA: /providers/Microsoft.Billing/billingAccounts/<id>/enrollmentAccounts/<id> | MCA: /providers/Microsoft.Billing/billingAccounts/<id>/billingProfiles/<id>/invoiceSections/<id>"
   type        = string
 }
 
@@ -51,7 +51,7 @@ variable "location" {
 }
 
 variable "workload_type" {
-  description = "EA workload type. 'DevTest' reduces costs and is the default for sandboxes. Use 'Production' only when explicitly required."
+  description = "Subscription workload type. 'DevTest' reduces costs and is the default for sandboxes. Use 'Production' only when explicitly required."
   type        = string
   default     = "DevTest"
 

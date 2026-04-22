@@ -4,7 +4,7 @@ resource "time_static" "created" {}
 
 locals {
   # Extract the real subscription GUID from the azapi response.
-  subscription_id = azapi_resource.subscription.output.properties.subscriptionId
+  subscription_id = azapi_resource.subscription.output.subscription_id
 
   created_date = formatdate("YYYY-MM-DD", time_static.created.rfc3339)
 
