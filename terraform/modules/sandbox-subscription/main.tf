@@ -64,7 +64,38 @@ resource "azapi_resource" "governance_rg" {
 }
 
 # ---------------------------------------------------------------------------
-# 3. Subscription-level tags
+# 3. Destroy-time subscription cancellation
+#
+# Fires only during terraform destroy (when = "destroy"). Soft-cancels the
+# subscription before Terraform attempts to delete the alias resource.
+# retry handles the case where Azure rejects cancellation because resources
+# still exist inside the subscription — the pipeline's decommission:prepare
+# step removes the lock and empties the governance RG first, but this retry
+# ensures destroy is safe even when called directly.
+# ---------------------------------------------------------------------------
+resource "azapi_resource_action" "subscription_cancel" {
+  action      = "providers/Microsoft.Subscription/cancel"
+  method      = "POST"
+  resource_id = "/subscriptions/${local.subscription_id}"
+  type        = "Microsoft.Resources/subscriptions@2021-10-01"
+  when        = "destroy"
+
+  retry = {
+    error_message_regex = ["ResourcesExistingOnSubscription"]
+  }
+
+  timeouts {
+    create = "30m"
+    delete = "30m"
+    read   = "30m"
+    update = "30m"
+  }
+
+  depends_on = [azapi_resource.subscription]
+}
+
+# ---------------------------------------------------------------------------
+# 4. Subscription-level tags
 #
 # azapi_update_resource merges tags onto the subscription resource without
 # replacing other properties (PATCH semantics).
