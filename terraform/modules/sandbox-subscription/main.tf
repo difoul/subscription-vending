@@ -100,10 +100,9 @@ resource "azapi_resource_action" "subscription_cancel" {
 # azapi_resource targets the Tags child resource (PUT semantics) on the
 # subscription — the correct ARM path for subscription-level tag management.
 # ---------------------------------------------------------------------------
-resource "azapi_resource" "subscription_tags" {
-  type      = "Microsoft.Resources/tags@2022-09-01"
-  name      = "default"
-  parent_id = "/subscriptions/${local.subscription_id}"
+resource "azapi_update_resource" "subscription_tags" {
+  resource_id = "/subscriptions/${local.subscription_id}/providers/Microsoft.Resources/tags/default"
+  type        = "Microsoft.Resources/tags@2022-09-01"
 
   body = {
     properties = {
