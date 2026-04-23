@@ -97,19 +97,22 @@ resource "azapi_resource_action" "subscription_cancel" {
 # ---------------------------------------------------------------------------
 # 4. Subscription-level tags
 #
-# azapi_update_resource merges tags onto the subscription resource without
-# replacing other properties (PATCH semantics).
+# azapi_resource targets the Tags child resource (PUT semantics) on the
+# subscription — the correct ARM path for subscription-level tag management.
 # ---------------------------------------------------------------------------
-resource "azapi_update_resource" "subscription_tags" {
-  resource_id = "/subscriptions/${local.subscription_id}"
-  type        = "Microsoft.Resources/subscriptions@2022-09-01"
+resource "azapi_resource" "subscription_tags" {
+  type      = "Microsoft.Resources/tags@2022-09-01"
+  name      = "default"
+  parent_id = "/subscriptions/${local.subscription_id}"
 
   body = {
-    tags = local.lifecycle_tags
+    properties = {
+      tags = local.lifecycle_tags
+    }
   }
 
   retry = {
-    error_message_regex  = ["SubscriptionNotFound"]
+    error_message_regex  = ["SubscriptionNotFound", "LinkedAuthorizationFailed"]
     interval_seconds     = 10
     max_interval_seconds = 60
   }
