@@ -1,34 +1,34 @@
 # ---------------------------------------------------------------------------
-# Budget — STEP 3 (commented out until governance RG is verified)
+# Budget — STEP 3 (budget commented out until governance RG is verified)
 # ---------------------------------------------------------------------------
 
-# resource "azapi_resource" "budget_action_group" {
-#   name      = "ag-sandbox-budget-alerts"
-#   parent_id = azapi_resource.governance_rg.id
-#   type      = "Microsoft.Insights/actionGroups@2023-01-01"
-#   location  = "global"
-#
-#   body = {
-#     properties = {
-#       groupShortName = "budgetalrt"
-#       enabled        = true
-#       emailReceivers = [
-#         {
-#           name                 = "owner"
-#           emailAddress         = var.owner_email
-#           useCommonAlertSchema = true
-#         },
-#         {
-#           name                 = "ops"
-#           emailAddress         = var.ops_email
-#           useCommonAlertSchema = true
-#         }
-#       ]
-#     }
-#   }
-#
-#   depends_on = [azapi_resource.governance_rg]
-# }
+resource "azapi_resource" "budget_action_group" {
+  name      = "ag-sandbox-budget-alerts"
+  parent_id = azapi_resource.governance_rg.id
+  type      = "Microsoft.Insights/actionGroups@2023-01-01"
+  location  = "global"
+
+  body = {
+    properties = {
+      groupShortName = "budgetalrt"
+      enabled        = true
+      emailReceivers = [
+        {
+          name                 = "owner"
+          emailAddress         = var.owner_email
+          useCommonAlertSchema = true
+        },
+        {
+          name                 = "ops"
+          emailAddress         = var.ops_email
+          useCommonAlertSchema = true
+        }
+      ]
+    }
+  }
+
+  depends_on = [azapi_resource.governance_rg]
+}
 
 # resource "azurerm_consumption_budget_subscription" "sandbox" {
 #   name            = "budget-sandbox"

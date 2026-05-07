@@ -1,15 +1,25 @@
-# # Look up the requester's object ID from their UPN.
-# data "azuread_user" "owner" {
-#   user_principal_name = var.owner_user_principal_name
-# }
+# Grant Contributor at subscription scope, time-bounded to match subscription expiry.
+# Group object ID is passed directly — no AAD user lookup required.
+# Requires Azure AD P2 / Microsoft Entra ID Governance (PIM).
+resource "azurerm_pim_active_role_assignment" "group_contributor" {
+  scope              = "/subscriptions/${local.subscription_id}"
+  role_definition_id = "/subscriptions/${local.subscription_id}/providers/Microsoft.Authorization/roleDefinitions/b24988ac-6180-42a0-ab88-20f7382dd24c"
+  principal_id       = var.owner_group_object_id
+  justification      = "Sandbox subscription access — expires with subscription on ${local.expiry_date}."
 
-# # Grant Contributor at the subscription scope.
-# # Contributor can create/modify/delete resources but CANNOT manage RBAC or locks,
-# # so they cannot remove the CanNotDelete lock protecting the governance RG.
-# resource "azurerm_role_assignment" "owner_contributor" {
-#   scope                = "/subscriptions/${local.subscription_id}"
-#   role_definition_name = "Contributor"
-#   principal_id         = data.azuread_user.owner.object_id
+  schedule {
+    expiration {
+      end_date_time = "${local.expiry_date}T23:59:59Z"
+    }
+  }
 
-#   depends_on = [time_sleep.wait_for_subscription]
-# }
+  depends_on = [azapi_resource.governance_rg, azapi_resource_action.subscription_cancel]
+}
+
+# Reader on the subscription — lets the alert rule's managed identity query
+# Resource Graph (ResourceContainers) when evaluating the scheduled query rule.
+resource "azurerm_role_assignment" "alert_reader" {
+  scope                = "/subscriptions/${local.subscription_id}"
+  role_definition_name = "Reader"
+  principal_id         = azapi_resource.subscription_alert.output.principal_id
+}
